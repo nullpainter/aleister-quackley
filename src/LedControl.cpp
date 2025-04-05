@@ -1,95 +1,48 @@
 #include "LedControl.h"
 
-CRGBPalette16 LedControl::_palette =CRGBPalette16(CRGB::Purple, CRGB::Red);
+// Set colors which will best shine through the red duck. In reality, these mostly
+// get transmitted as red.
+CRGBPalette16 LedControl::_palette = CRGBPalette16(CRGB::White, CRGB::Red, CRGB::Navy);
 
 CRGB LedControl::_leds[NUM_LEDS];
-
-FadeState LedControl::_fadeState;
-
-int LedControl::_fadeDuration;
-int LedControl::_fadeDelay;
-long LedControl::_fadeStart;
+uint8_t colourIndex[NUM_LEDS];
 
 void LedControl::setup()
 {
-    FastLED.addLeds<WS2812B, LED_PIN, GRB>(_leds, NUM_LEDS).setCorrection(TypicalPixelString);
-    FastLED.setBrightness(MAX_BRIGHTNESS);
+    FastLED.addLeds<WS2812B, LED_PIN, GRB>(_leds, NUM_LEDS)
+        // .setTemperature(Candle)
+        .setCorrection(TypicalPixelString);
 
     for (int i = 0; i < NUM_LEDS; i++)
     {
-        _leds[i] = ColorFromPalette(_palette, random8());
+        colourIndex[i] = random8();
     }
 }
 
-uint8_t offset;
+uint8_t sinBeat = beatsin8(10, 10, 255, 0, 0);
 
 void LedControl::update()
 {
-        EVERY_N_MILLISECONDS(200)
+    for (int i = 0; i < NUM_LEDS; i++)
+    {
+        _leds[i] = ColorFromPalette(_palette, colourIndex[i], sinBeat);
+    }
+
+    // Color cycle LEDs
+    EVERY_N_MILLISECONDS(5)
+    {
+        // fadeLightBy(_leds, NUM_LEDS, 1);
+
+        for (int i = 0; i < NUM_LEDS; i++)
         {
-            _leds[random8(NUM_LEDS)] = ColorFromPalette(_palette, random8());
+            colourIndex[i]++;
         }
+    }
 
-        // Flicker LEDs
-        EVERY_N_MILLISECONDS(5)
-        {
-        fadeLightBy(_leds, NUM_LEDS, 1);
-        // fadeToBlackBy(_leds, NUM_LEDS, 1);
-        }
-
-    uint8_t brightness = getBrightness();
-    resetFadeState(brightness);
-
-    FastLED.setBrightness(brightness);
     FastLED.show();
 }
 
-void LedControl::setMaxBrightness(uint8_t brightness) {
+void LedControl::setMaxBrightness(uint8_t brightness)
+{
     FastLED.setBrightness(brightness);
-}
-
-void LedControl::resetFadeState(uint8_t brightness)
-{
-    if (brightness == MAX_BRIGHTNESS && _fadeState == FadeState::FadeIn)
-    {
-        Serial.println("[LedControl] Resetting state to on after fade in");
-        on();
-    }
-}
-
-uint8_t LedControl::getBrightness()
-{
-    long elapsedMillis = millis() - _fadeStart;
-
-    switch (_fadeState)
-    {
-    case FadeState::FadeIn:
-        if (elapsedMillis < _fadeDelay)
-        {
-            return FastLED.getBrightness();
-        }
-
-        return constrain(round((elapsedMillis - _fadeDelay) / (float)_fadeDuration * MAX_BRIGHTNESS), 0, MAX_BRIGHTNESS);
-    default:
-        return FastLED.getBrightness();
-    }
-}
-
-void LedControl::fadeIn(int delay, int duration)
-{
-    Serial.printf("[LedControl] Fading in for %dms with %d delay\n", duration, delay);
-
-    _fadeState = FadeState::FadeIn;
-    _fadeDuration = duration;
-    _fadeDelay = delay;
-
-    _fadeStart = millis();
-}
-
-void LedControl::on()
-{
-    Serial.println("[LedControl] Turning on");
-
-    _fadeState = FadeState::On;
-    FastLED.setBrightness(MAX_BRIGHTNESS);
 }

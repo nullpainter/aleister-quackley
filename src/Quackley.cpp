@@ -3,6 +3,7 @@
 #include "Microphone.h"
 #include "LedControl.h"
 #include "Quackley.h"
+#include "AudioReactiveMapper.h"
 
 void setup()
 {
@@ -12,17 +13,22 @@ void setup()
   Microphone::setup();
 }
 
-bool _wifiConnected;
+AudioReactiveMapper audioReactiveMapper;
 
 void loop()
 {
-  float loudness = Microphone::getLoudness();
-  Serial.println(loudness);
+  // Periodically sample the microphone amplitude
+  EVERY_N_MILLISECONDS(100)
+  {
+    float loudness = Microphone::getLoudness();
+    uint8_t globalBrightness = audioReactiveMapper.mapAmplitudeToBrightness(loudness);
 
-  // Map loudness to brightness 
-  uint8_t brightness = map(loudness, 0, MAX_LOUDNESS, 0, 255);
-  brightness = constrain(brightness, MIN_BRIGHTNESS, 255);
+    // Uncomment for debugging
+    // Serial.print(loudness);
+    // Serial.print(",");
+    // Serial.println(globalBrightness);
 
-  LedControl::setMaxBrightness(brightness);
+    LedControl::setMaxBrightness(globalBrightness);
+  }
   LedControl::update();
 }

@@ -25,21 +25,19 @@ void Microphone::setup()
         .dma_buf_len = 64,
         .use_apll = false,
         .tx_desc_auto_clear = false,
-        .fixed_mclk = 0
-    };
+        .fixed_mclk = 0};
 
     i2s_pin_config_t pin_config = {
         // Replace with your BCK pin
-        .bck_io_num = 26,
+        .bck_io_num = 2,
 
         // Replace with your WS pin
-        .ws_io_num = 25,
+        .ws_io_num = 3,
 
         .data_out_num = I2S_PIN_NO_CHANGE,
 
         // Replace with your DATA IN pin
-        .data_in_num = 33
-    };
+        .data_in_num = 1};
 
     i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
     i2s_set_pin(I2S_NUM_0, &pin_config);
@@ -48,7 +46,7 @@ void Microphone::setup()
 
 /**
  * @brief Calculates the RMS loudness of the audio signal.
- * 
+ *
  * @return float The calculated RMS loudness.
  */
 float Microphone::getLoudness()
